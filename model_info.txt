@@ -1,0 +1,7 @@
+Galaxy Zoo simple classifier
+Input size: 128x128 RGB
+Output: sigmoid
+0 = Smooth
+1 = Spiral/Disk
+Threshold: 0.5
+Last conv layer: conv2d_2
