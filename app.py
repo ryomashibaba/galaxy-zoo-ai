@@ -1,38 +1,39 @@
-import streamlit as st
+import gradio as gr
 import tensorflow as tf
 import numpy as np
 from PIL import Image
 
 IMG_SIZE = 128
 
-@st.cache_resource
-def load_model():
-    return tf.keras.models.load_model("galaxy_model.keras")
+model = tf.keras.models.load_model("galaxy_model.keras")
 
-model = load_model()
+def predict_galaxy(image):
+    image = image.convert("RGB")
+    resized = image.resize((IMG_SIZE, IMG_SIZE))
 
-st.title("Galaxy Zoo AI")
-
-uploaded = st.file_uploader(
-    "Upload Galaxy Image",
-    type=["jpg", "jpeg", "png"]
-)
-
-if uploaded:
-
-    img = Image.open(uploaded).convert("RGB")
-
-    st.image(img)
-
-    x = img.resize((IMG_SIZE, IMG_SIZE))
-    x = np.array(x) / 255.0
+    x = np.array(resized) / 255.0
     x = x[None, ...]
 
     pred = model.predict(x, verbose=0)[0][0]
 
     if pred > 0.5:
-        st.success("Spiral / Disk Galaxy")
+        label = "Spiral / Disk Galaxy"
+        confidence = pred
     else:
-        st.info("Smooth / Elliptical Galaxy")
+        label = "Smooth / Elliptical Galaxy"
+        confidence = 1 - pred
 
-    st.write("Probability:", float(pred))
+    return label, f"{confidence * 100:.2f}%"
+
+demo = gr.Interface(
+    fn=predict_galaxy,
+    inputs=gr.Image(type="pil", label="Upload a galaxy image"),
+    outputs=[
+        gr.Textbox(label="Prediction"),
+        gr.Textbox(label="Confidence")
+    ],
+    title="Galaxy Zoo AI",
+    description="Upload a galaxy image. The AI predicts whether it is Spiral/Disk or Smooth/Elliptical."
+)
+
+demo.launch()
